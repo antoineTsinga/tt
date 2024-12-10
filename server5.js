@@ -64,3 +64,30 @@ app.get('/stream-project', async (req, res) => {
     res.status(500).json({ error: 'Erreur lors du streaming du projet.' });
   }
 });
+
+
+
+/*
+ArchiverError: queue closed
+    at Archiver.append (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\node_modules\archiver\lib\core.js:560:24)
+    at streamProject (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\server.js:249:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async streamProject (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\server.js:251:9)
+    at async C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\server.js:261:5 {
+  code: 'QUEUECLOSED',
+  data: undefined
+}
+C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\node_modules\content-type\index.js:126
+    throw new TypeError('invalid media type')
+          ^
+
+TypeError: invalid media type
+    at Object.parse (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\node_modules\content-type\index.js:126:11)
+    at setCharset (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\node_modules\express\lib\utils.js:252:28)
+    at ServerResponse.send (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\node_modules\express\lib\response.js:174:32)
+    at ServerResponse.json (C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\node_modules\express\lib\response.js:278:15)
+    at C:\Users\FT999711\Documents\COFFY\Projets\coffy-back\server.js:265:21
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Node.js v20.15.1
+*/ 
