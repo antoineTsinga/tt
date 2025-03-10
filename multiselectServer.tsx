@@ -13,7 +13,8 @@ interface MultiSelectDropdownProps {
   placeholder?: string;
   className?: string;
   showSearchBar?: boolean;
-  onSearch?: (query: string) => void; // Optionnel pour fetch côté serveur
+  onSearch?: (query: string) => Promise<Option[]>; // Recherche côté serveur avec promesse
+  loadingText?: string; // Texte personnalisé pour l'état de chargement
 }
 
 const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
@@ -24,11 +25,14 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   placeholder = 'Sélectionnez...',
   className,
   showSearchBar = true,
-  onSearch, // Si fourni, utilise pour recherche serveur
+  onSearch, // Recherche côté serveur (fournie en callback)
+  loadingText = 'Chargement...', // Texte à afficher pendant le chargement
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState<Option[]>(options);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -60,14 +64,18 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     const value = e.target.value;
     setSearch(value);
     setHighlightedIndex(0);
+
     if (onSearch) {
-      onSearch(value); // Fetch options depuis le serveur si besoin
+      setLoading(true); // Activer l'état de chargement
+      onSearch(value)
+        .then((options) => {
+          setFilteredOptions(options);
+        })
+        .finally(() => {
+          setLoading(false); // Désactiver l'état de chargement une fois la recherche terminée
+        });
     }
   };
-
-  const filteredOptions = onSearch
-    ? options // Avec recherche serveur, on ne filtre pas côté client
-    : options.filter(option => option.label.toLowerCase().includes(search.toLowerCase()));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -136,7 +144,9 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           )}
 
           <div className="max-h-48 overflow-y-auto">
-            {filteredOptions.length > 0 ? (
+            {loading ? (
+              <div className="text-sm text-gray-500 p-2">{loadingText}</div>
+            ) : filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => (
                 <div
                   key={option.value}
