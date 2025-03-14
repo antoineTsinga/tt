@@ -7,8 +7,9 @@ export interface Option {
 
 interface MultiSelectDropdownProps {
   options: Option[];
-  selectedValues: string[];
-  onChange: (values: string[]) => void;
+  selectedValues?: string[]; // Controlled mode
+  defaultValues?: string[];  // Uncontrolled mode
+  onChange?: (values: string[]) => void;
   label?: string;
   placeholder?: string;
   className?: string;
@@ -20,6 +21,7 @@ interface MultiSelectDropdownProps {
 const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   options,
   selectedValues,
+  defaultValues = [],
   onChange,
   label,
   placeholder = 'Sélectionnez...',
@@ -28,19 +30,22 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   onSearch,
   loadingText = 'Chargement...',
 }) => {
+  const isControlled = selectedValues !== undefined;
+  const [internalSelectedValues, setInternalSelectedValues] = useState<string[]>(defaultValues);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState<Option[]>(options);
-
+  const labelCache = useRef(new Map<string, string>());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const labelCache = useRef(new Map<string, string>());
 
-  // Initialisation du cache avec les options de départ
+  const currentSelectedValues = isControlled ? selectedValues : internalSelectedValues;
+
+  // Initialise le cache des labels
   useEffect(() => {
-    options.forEach((option) => {
+    options.forEach(option => {
       labelCache.current.set(option.value, option.label);
     });
   }, [options]);
@@ -57,11 +62,16 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   }, [options, search, onSearch]);
 
   const toggleOption = (value: string, label: string) => {
-    if (selectedValues.includes(value)) {
-      onChange(selectedValues.filter((v) => v !== value));
+    const newSelectedValues = currentSelectedValues.includes(value)
+      ? currentSelectedValues.filter(v => v !== value)
+      : [...currentSelectedValues, value];
+
+    labelCache.current.set(value, label); // Stocke l'option sélectionnée
+
+    if (isControlled) {
+      onChange?.(newSelectedValues);
     } else {
-      onChange([...selectedValues, value]);
-      labelCache.current.set(value, label); // Stocke l'option sélectionnée
+      setInternalSelectedValues(newSelectedValues);
     }
   };
 
@@ -73,8 +83,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     if (onSearch) {
       setLoading(true);
       onSearch(value)
-        .then((newOptions) => {
-          // Met à jour le cache avec les nouvelles options
+        .then(newOptions => {
           newOptions.forEach(opt => labelCache.current.set(opt.value, opt.label));
           setFilteredOptions(newOptions);
         })
@@ -84,11 +93,9 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
-      setHighlightedIndex((prev) =>
-        Math.min(prev + 1, filteredOptions.length - 1)
-      );
+      setHighlightedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
     } else if (e.key === 'ArrowUp') {
-      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+      setHighlightedIndex(prev => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && filteredOptions[highlightedIndex]) {
       e.preventDefault();
       const option = filteredOptions[highlightedIndex];
@@ -111,10 +118,10 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex flex-wrap gap-2 min-h-[2rem] items-center">
-          {selectedValues.length === 0 ? (
+          {currentSelectedValues.length === 0 ? (
             <span className="text-gray-400">{placeholder}</span>
           ) : (
-            selectedValues.map((value) => (
+            currentSelectedValues.map(value => (
               <span
                 key={value}
                 className="flex items-center space-x-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-sm"
@@ -122,7 +129,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 <span>{labelCache.current.get(value) ?? value}</span>
                 <button
                   type="button"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     toggleOption(value, labelCache.current.get(value) ?? value);
                   }}
@@ -160,27 +167,21 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 <div
                   key={option.value}
                   className={`flex items-center space-x-2 p-2 cursor-pointer ${
-                    highlightedIndex === index
-                      ? 'bg-blue-100'
-                      : 'hover:bg-gray-100'
+                    highlightedIndex === index ? 'bg-blue-100' : 'hover:bg-gray-100'
                   }`}
                   onClick={() => toggleOption(option.value, option.label)}
                 >
                   <input
                     type="checkbox"
                     className="form-checkbox text-blue-600"
-                    checked={selectedValues.includes(option.value)}
+                    checked={currentSelectedValues.includes(option.value)}
                     readOnly
                   />
-                  <span className="text-sm text-gray-700">
-                    {option.label}
-                  </span>
+                  <span className="text-sm text-gray-700">{option.label}</span>
                 </div>
               ))
             ) : (
-              <div className="text-sm text-gray-500 p-2">
-                Aucun résultat trouvé
-              </div>
+              <div className="text-sm text-gray-500 p-2">Aucun résultat trouvé</div>
             )}
           </div>
         </div>
