@@ -1,15 +1,7 @@
-import React, { ReactNode } from "react";
-import clsx from "clsx";
-
-export interface HeaderProps {
-  children: ReactNode;
-  variant?: "default" | "dark" | "custom";
-  className?: string;
-}
-
 const Header: React.FC<HeaderProps> & {
   LinkGroup: React.FC<{ children: ReactNode }>;
   ActionGroup: React.FC<{ children: ReactNode }>;
+  SearchBar: React.FC<{ placeholder?: string; onSearch?: (query: string) => void }>;
 } = ({ children, variant = "default", className }) => {
   return (
     <header
@@ -34,5 +26,25 @@ Header.LinkGroup = ({ children }) => (
 Header.ActionGroup = ({ children }) => (
   <div className="flex items-center gap-4">{children}</div>
 );
+
+// Composant pour la barre de recherche
+Header.SearchBar = ({ placeholder = "Rechercher...", onSearch }) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && onSearch) {
+      onSearch(e.currentTarget.value);
+    }
+  };
+
+  return (
+    <div className="relative w-64">
+      <input
+        type="text"
+        className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder={placeholder}
+        onKeyDown={handleKeyDown}
+      />
+    </div>
+  );
+};
 
 export default Header;
