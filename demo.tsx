@@ -1,28 +1,53 @@
-import Header from "my-shared-library/Header";
-import { BellIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import SideMenuDynamic from "my-shared-library/SideMenuDynamic";
 
-const MyAppHeader = () => {
-  return (
-    <Header variant="dark">
-      {/* Logo à gauche */}
-      <div className="flex items-center gap-2">
-        <img src="/logo-app1.svg" alt="Logo App 1" className="h-8" />
-        <span className="text-lg font-bold">App 1</span>
-      </div>
+const menuData = [
+  {
+    label: "Accueil",
+    icon: "home",
+    href: "/"
+  },
+  {
+    label: "Analytics",
+    icon: "chart-bar",
+    children: [
+      {
+        label: "Tableau de bord",
+        href: "/dashboard"
+      },
+      {
+        label: "Rapports",
+        href: "/reports",
+        children: [
+          {
+            label: "Rapport Mensuel",
+            href: "/reports/monthly"
+          },
+          {
+            label: "Rapport Annuel",
+            href: "/reports/yearly"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    label: "Compte",
+    icon: "user",
+    children: [
+      {
+        label: "Profil",
+        href: "/profile"
+      },
+      {
+        label: "Paramètres",
+        href: "/settings"
+      }
+    ]
+  }
+];
 
-      {/* Groupe de liens */}
-      <Header.LinkGroup>
-        <a href="/" className="hover:underline">Accueil</a>
-        <a href="/dashboard" className="hover:underline">Dashboard</a>
-      </Header.LinkGroup>
-
-      {/* Groupe d'actions à droite */}
-      <Header.ActionGroup>
-        <BellIcon className="h-6 w-6 cursor-pointer" />
-        <UserCircleIcon className="h-6 w-6 cursor-pointer" />
-      </Header.ActionGroup>
-    </Header>
-  );
+const MyAppSideMenu = () => {
+  return <SideMenuDynamic menuData={menuData} />;
 };
 
-export default MyAppHeader;
+export default MyAppSideMenu;
