@@ -1,0 +1,136 @@
+services:
+  discovery-service:
+    build: ./discovery-service
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - traefik
+    networks:
+      - streamtv-network
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
+      - DISCOVERY_SERVER_URL=http://discovery-service:8761
+    depends_on:
+      - discovery-service
+      - traefik
+    networks:
+      - streamtv-network
+
+  user-service:
+    build: ./user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
+      - DB_HOST=user-db
+      - DB_PORT=5432
+      - DB_NAME=userdb
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - RSA_PUBLIC_KEY_PATH=/certs/public.pem
+    depends_on:
+      - discovery-service
+      - user-db
+      - traefik
+    networks:
+      - streamtv-network
+
+  authentication-service:
+    build: ./authentication-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
+      - DB_HOST=auth-db
+      - DB_PORT=5432
+      - DB_NAME=authdb
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - RSA_PRIVATE_KEY_PATH=/certs/private.pem
+      - RSA_PUBLIC_KEY_PATH=/certs/public.pem
+    depends_on:
+      - discovery-service
+      - auth-db
+      - traefik
+    networks:
+      - streamtv-network
+
+  watchlist-service:
+    build: ./watchlist-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
+      - DB_HOST=watchlist-db
+      - DB_PORT=5432
+      - DB_NAME=watchlistdb
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - RSA_PUBLIC_KEY_PATH=/certs/public.pem
+    depends_on:
+      - discovery-service
+      - watchlist-db
+      - traefik
+    networks:
+      - streamtv-network
+
+  user-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=userdb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - user-data:/var/lib/postgresql/data
+    networks:
+      - streamtv-network
+
+  auth-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=authdb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - auth-data:/var/lib/postgresql/data
+    networks:
+      - streamtv-network
+
+  watchlist-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=watchlistdb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - watchlist-data:/var/lib/postgresql/data
+    networks:
+      - streamtv-network
+
+  traefik:
+    image: traefik:v2.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - streamtv-network
+
+networks:
+  streamtv-network:
+    driver: bridge
+
+volumes:
+  user-data:
+  auth-data:
+  watchlist-data:
